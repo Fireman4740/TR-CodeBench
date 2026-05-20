@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
 from typing import Any
+from urllib.parse import urlparse
 
 try:
     import requests
@@ -39,6 +40,13 @@ def _env_int(name: str, default: int) -> int:
 
 def _env_float(name: str, default: float) -> float:
     return float(os.getenv(name, str(default)))
+
+
+def _env_str(name: str, default: str) -> str:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    return value.strip()
 
 
 def safe_slug(value: str, max_len: int = 80) -> str:
@@ -114,8 +122,8 @@ OUTPUT RULES
 
 class OpenRouterRunner:
     def __init__(self, args: argparse.Namespace) -> None:
-        self.base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
-        self.api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
+        self.base_url = _env_str("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
+        self.api_key = _env_str("OPENROUTER_API_KEY", "")
         self.http_referer = os.getenv("OPENROUTER_HTTP_REFERER", "").strip()
         self.app_title = os.getenv("OPENROUTER_APP_TITLE", "TR-CodeBench-Proto-100").strip()
         self.models = _split_csv(args.models or os.getenv("OPENROUTER_MODELS", "")) or ["openai/gpt-4o-mini"]
@@ -137,6 +145,15 @@ class OpenRouterRunner:
         self.candidate_dir.mkdir(parents=True, exist_ok=True)
         self.results_jsonl = self.output_dir / f"openrouter_eval_{self.run_id}.jsonl"
         self.results_csv = self.output_dir / f"openrouter_eval_{self.run_id}.csv"
+        self._validate_base_url()
+
+    def _validate_base_url(self) -> None:
+        parsed = urlparse(self.base_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError(
+                "OPENROUTER_BASE_URL must be an absolute URL, for example "
+                "'https://openrouter.ai/api/v1'."
+            )
 
     def _resolve_item_ids(self, item_ids_raw: str, max_items_arg: str | None) -> list[str]:
         all_item_ids = list_item_ids()
@@ -164,6 +181,18 @@ class OpenRouterRunner:
             headers["X-Title"] = self.app_title
         return headers
 
+    def _raise_http_error(self, response: requests.Response) -> None:
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            body = response.text.strip()
+            if len(body) > 800:
+                body = body[:800] + "..."
+            detail = f"{exc}"
+            if body:
+                detail = f"{detail}; response body: {body}"
+            raise requests.HTTPError(detail, response=response) from exc
+
     def call_openrouter(self, model: str, prompt: str) -> tuple[str, dict[str, Any], float]:
         payload = {
             "model": model,
@@ -188,7 +217,7 @@ class OpenRouterRunner:
                     json=payload,
                     timeout=self.request_timeout,
                 )
-                response.raise_for_status()
+                self._raise_http_error(response)
                 data = response.json()
                 content = data["choices"][0]["message"].get("content") or ""
                 return content, data, time.perf_counter() - start
@@ -325,6 +354,7 @@ class OpenRouterRunner:
         jobs = [(model, item_id, run_index) for model in self.models for item_id in self.item_ids for run_index in range(self.n_runs)]
         print(f"Project root: {ROOT}")
         print(f"Run id: {self.run_id}")
+        print(f"OpenRouter base URL: {self.base_url}")
         print(f"Models: {', '.join(self.models)}")
         print(f"Items: {', '.join(self.item_ids)}")
         print(f"Planned requests: {len(jobs)}; max_workers={self.max_workers}; retries={self.retries}")

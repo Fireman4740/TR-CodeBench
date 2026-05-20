@@ -76,6 +76,24 @@ python3.11 -m trcodebench.evaluate --item trcb-proto-0001 --candidate candidates
 
 For live model runs through OpenRouter, copy `.env.example` to `.env`, set `OPENROUTER_API_KEY`, and optionally edit `OPENROUTER_MODELS`.
 
+On WSL, run the setup commands from the repository root:
+
+```bash
+cd /mnt/f/IA/TR-CodeBench
+sed -i 's/\r$//' scripts/run_openrouter_eval.sh
+chmod +x scripts/run_openrouter_eval.sh
+python3.11 -m pip install -e ".[notebook]"
+cp -n .env.example .env
+```
+
+Then edit `.env`:
+
+```bash
+nano .env
+```
+
+Set `OPENROUTER_API_KEY` and keep `OPENROUTER_BASE_URL=https://openrouter.ai/api/v1`. Do not leave `OPENROUTER_BASE_URL` empty; the runner now falls back to the default, but the explicit value makes the configuration easier to audit.
+
 Install notebook dependencies:
 
 ```bash
@@ -90,6 +108,25 @@ jupyter lab notebooks/openrouter_real_world_eval.ipynb
 ```
 
 The notebook calls OpenRouter, writes temporary candidate files under `tmp/openrouter_candidates/`, evaluates them with the local harness, and saves run outputs under `reports/openrouter_runs/`.
+
+To launch the shell evaluation script from WSL:
+
+```bash
+./scripts/run_openrouter_eval.sh \
+  --max-items all \
+  --n-runs 1 \
+  --hidden-cases 30 \
+  --pbt-cases 10 \
+  --max-workers 10
+```
+
+For a quick one-item smoke test before the full run:
+
+```bash
+./scripts/run_openrouter_eval.sh \
+  --max-items 1 \
+  --max-workers 1
+```
 
 For a non-interactive run, use the Python 3.11 nbconvert module directly:
 
@@ -169,11 +206,3 @@ Keep oracle code, hidden tests, and source metadata separated from prompts shown
 - Hidden tests are generated locally and are not encrypted in this v0.1 scaffold.
 - Static API checks are AST heuristics, not a full policy engine.
 - Optimization scoring is binary in v0 and should be replaced by calibrated stress tests for v0.2.
-
-V0.2
-./scripts/run_openrouter_eval.sh \
- --max-items all \
- --n-runs 1 \
- --hidden-cases 30 \
- --pbt-cases 10 \
- --max-workers 10
