@@ -1,0 +1,90 @@
+{
+  "id": "trcb-proto-0030",
+  "language": "python",
+  "family": "string",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-20",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Prefix Match Length Array Construction",
+    "statement": "Given a string s, compute the Z-array where z[i] is the length of the longest substring starting at position i that matches a prefix of s. By convention z[0] = 0 (or len(s), both accepted \u2014 use 0). Return the Z-array.",
+    "signature": "def solve(s: str) -> list[int]:",
+    "function_name": "solve",
+    "arguments": ["s"],
+    "allowed_imports": ["typing"],
+    "forbidden_imports": ["numpy", "pandas", "networkx", "scipy"],
+    "optimization_constraints": {
+      "time_complexity": "O(n)",
+      "memory_mb": 128,
+      "rejects_naive": "O(n^2) comparing at each position is too slow for large hidden cases."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0030.py",
+    "reference_complexity": "O(n)",
+    "known_valid_paradigms": [
+      "z_algorithm_window",
+      "kmp_to_z_conversion",
+      "suffix_array_based"
+    ],
+    "naive_solution_complexity": "O(n^2)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": false,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": true,
+      "nested_loops": 1,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": ["z_algorithm_window"]
+  },
+  "tests": {
+    "public_tests": ["tests/public/trcb_proto_0030_test.py"],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.strings_extended:z_function_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.strings_extended:Z_FUNCTION_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_z_algorithm_vars",
+      "type": "forbidden_construct",
+      "forbidden": [
+        "z_array_l_r_window_variables",
+        "left_right_z_box_pattern"
+      ],
+      "reason": "Force KMP-based or alternative computation instead of standard Z-algorithm",
+      "expected_alternatives": [
+        "kmp_to_z_conversion",
+        "suffix_array_based"
+      ],
+      "is_feasible": true
+    }
+  ]
+}

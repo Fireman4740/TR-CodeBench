@@ -1,0 +1,90 @@
+{
+  "id": "trcb-proto-0037",
+  "language": "python",
+  "family": "math",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-20",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Density of Irreducible Integers Below Threshold",
+    "statement": "Given an integer n (n >= 0), return the count of prime numbers strictly less than n.",
+    "signature": "def solve(n: int) -> int:",
+    "function_name": "solve",
+    "arguments": ["n"],
+    "allowed_imports": ["typing", "math"],
+    "forbidden_imports": ["numpy", "pandas", "networkx", "scipy"],
+    "optimization_constraints": {
+      "time_complexity": "O(n log log n)",
+      "memory_mb": 128,
+      "rejects_naive": "O(n * sqrt(n)) trial division for each number is too slow for large hidden cases."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0037.py",
+    "reference_complexity": "O(n log log n)",
+    "known_valid_paradigms": [
+      "sieve_eratosthenes",
+      "linear_sieve",
+      "segmented_sieve"
+    ],
+    "naive_solution_complexity": "O(n * sqrt(n))",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": false,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 2,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": ["sieve_eratosthenes"]
+  },
+  "tests": {
+    "public_tests": ["tests/public/trcb_proto_0037_test.py"],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.math_combinatorics:count_primes_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.math_combinatorics:COUNT_PRIMES_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_boolean_sieve",
+      "type": "forbidden_construct",
+      "forbidden": [
+        "boolean_array_sieve_pattern",
+        "list_of_booleans_marking"
+      ],
+      "reason": "Force linear sieve or wheel factorization instead of standard boolean sieve",
+      "expected_alternatives": [
+        "linear_sieve",
+        "wheel_factorization"
+      ],
+      "is_feasible": true
+    }
+  ]
+}

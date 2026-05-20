@@ -1,0 +1,105 @@
+{
+  "id": "trcb-proto-0014",
+  "language": "python",
+  "family": "sorting",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-20",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Continuous Central Tendency",
+    "statement": "Given a stream of integers one by one, after each insertion output the current median. If the count is even, return the smaller of the two middle values. Return the list of medians after each insertion.",
+    "signature": "def solve(stream: list[int]) -> list[int]:",
+    "function_name": "solve",
+    "arguments": [
+      "stream"
+    ],
+    "allowed_imports": [
+      "heapq",
+      "bisect",
+      "typing"
+    ],
+    "forbidden_imports": [
+      "numpy",
+      "pandas",
+      "networkx",
+      "scipy"
+    ],
+    "optimization_constraints": {
+      "time_complexity": "O(n log n)",
+      "memory_mb": 128,
+      "rejects_naive": "O(n^2) re-sorting after each insertion is too slow for large hidden cases."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0014.py",
+    "reference_complexity": "O(n log n)",
+    "known_valid_paradigms": [
+      "two_heaps",
+      "balanced_bst_augmented",
+      "sorted_list_bisect"
+    ],
+    "naive_solution_complexity": "O(n^2)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": true,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 0,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": [
+      "two_heaps"
+    ]
+  },
+  "tests": {
+    "public_tests": [
+      "tests/public/trcb_proto_0014_test.py"
+    ],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.sorting:running_median_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.sorting:RUNNING_MEDIAN_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_heapq",
+      "type": "forbidden_api",
+      "forbidden": [
+        "heapq",
+        "heappush",
+        "heappop"
+      ],
+      "reason": "Force bisect/sortedcontainers approach instead of two-heaps",
+      "expected_alternatives": [
+        "sorted_list_bisect"
+      ],
+      "is_feasible": true
+    }
+  ]
+}

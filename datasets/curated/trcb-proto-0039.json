@@ -1,0 +1,90 @@
+{
+  "id": "trcb-proto-0039",
+  "language": "python",
+  "family": "math",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-20",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Minimal Enclosing Polygon Vertices",
+    "statement": "Given a list of 2D points as (x, y) tuples, return the vertices of the convex hull in counter-clockwise order starting from the bottom-most (then left-most) point. If fewer than 3 points, return all points sorted. Collinear points on hull edges should NOT be included.",
+    "signature": "def solve(points: list[tuple[int, int]]) -> list[tuple[int, int]]:",
+    "function_name": "solve",
+    "arguments": ["points"],
+    "allowed_imports": ["typing", "math"],
+    "forbidden_imports": ["numpy", "pandas", "networkx", "scipy"],
+    "optimization_constraints": {
+      "time_complexity": "O(n log n)",
+      "memory_mb": 128,
+      "rejects_naive": "O(n^3) check all triples for hull edges is too slow for large hidden cases."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0039.py",
+    "reference_complexity": "O(n log n)",
+    "known_valid_paradigms": [
+      "andrew_monotone_chain",
+      "graham_scan",
+      "jarvis_march_optimized"
+    ],
+    "naive_solution_complexity": "O(n^3)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": false,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 1,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": ["andrew_monotone_chain"]
+  },
+  "tests": {
+    "public_tests": ["tests/public/trcb_proto_0039_test.py"],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.math_combinatorics:convex_hull_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.math_combinatorics:CONVEX_HULL_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_sorting_points",
+      "type": "forbidden_construct",
+      "forbidden": [
+        "sorted_builtin_on_points",
+        "list_sort_on_coordinates_pattern"
+      ],
+      "reason": "Force Graham scan with angle computation instead of monotone chain with sorting",
+      "expected_alternatives": [
+        "graham_scan",
+        "jarvis_march_optimized"
+      ],
+      "is_feasible": true
+    }
+  ]
+}
