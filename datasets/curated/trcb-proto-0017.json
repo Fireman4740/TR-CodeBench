@@ -1,0 +1,106 @@
+{
+  "id": "trcb-proto-0017",
+  "language": "python",
+  "family": "dynamic_programming",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-20",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Fewest Tokens to Reach Target Value",
+    "statement": "Given a list of distinct positive coin denominations and a target amount, return the minimum number of coins needed to make that amount. Return -1 if impossible.",
+    "signature": "def solve(coins: list[int], amount: int) -> int:",
+    "function_name": "solve",
+    "arguments": [
+      "coins",
+      "amount"
+    ],
+    "allowed_imports": [
+      "typing",
+      "functools",
+      "collections"
+    ],
+    "forbidden_imports": [
+      "numpy",
+      "pandas",
+      "networkx",
+      "scipy"
+    ],
+    "optimization_constraints": {
+      "time_complexity": "O(amount * len(coins))",
+      "memory_mb": 128,
+      "rejects_naive": "O(amount^n) brute-force recursive without memo is too slow for large hidden cases."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0017.py",
+    "reference_complexity": "O(amount * len(coins))",
+    "known_valid_paradigms": [
+      "dp_bottom_up",
+      "dp_top_down_memo",
+      "bfs_state_space"
+    ],
+    "naive_solution_complexity": "O(amount^n)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": false,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 2,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": [
+      "dp_bottom_up"
+    ]
+  },
+  "tests": {
+    "public_tests": [
+      "tests/public/trcb_proto_0017_test.py"
+    ],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.dp:coin_change_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.dp:COIN_CHANGE_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_nested_loops",
+      "type": "forbidden_construct",
+      "forbidden": [
+        "nested_for_loops",
+        "nested_while_loops"
+      ],
+      "reason": "Force BFS or recursive memo instead of iterative bottom-up DP",
+      "expected_alternatives": [
+        "bfs_state_space",
+        "dp_top_down_memo"
+      ],
+      "is_feasible": true
+    }
+  ]
+}

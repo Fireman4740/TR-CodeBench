@@ -1,0 +1,105 @@
+{
+  "id": "trcb-proto-0018",
+  "language": "python",
+  "family": "dynamic_programming",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-20",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Maximum Shared Thread in Two Sequences",
+    "statement": "Given two strings, return the length of their longest common subsequence. Characters do not need to be contiguous but must maintain relative order.",
+    "signature": "def solve(text1: str, text2: str) -> int:",
+    "function_name": "solve",
+    "arguments": [
+      "text1",
+      "text2"
+    ],
+    "allowed_imports": [
+      "typing",
+      "functools"
+    ],
+    "forbidden_imports": [
+      "numpy",
+      "pandas",
+      "networkx",
+      "scipy"
+    ],
+    "optimization_constraints": {
+      "time_complexity": "O(n*m)",
+      "memory_mb": 128,
+      "rejects_naive": "O(2^n) enumeration of subsequences is too slow for large hidden cases."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0018.py",
+    "reference_complexity": "O(n*m)",
+    "known_valid_paradigms": [
+      "dp_table_full",
+      "dp_space_optimized",
+      "hunt_szymanski"
+    ],
+    "naive_solution_complexity": "O(2^n)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": false,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 2,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": [
+      "dp_table_full"
+    ]
+  },
+  "tests": {
+    "public_tests": [
+      "tests/public/trcb_proto_0018_test.py"
+    ],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.dp:lcs_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.dp:LCS_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_nested_loops",
+      "type": "forbidden_construct",
+      "forbidden": [
+        "nested_for_loops",
+        "nested_while_loops"
+      ],
+      "reason": "Force recursive memo or Hunt-Szymanski (bisect-based for small alphabet)",
+      "expected_alternatives": [
+        "recursive_memoization",
+        "hunt_szymanski"
+      ],
+      "is_feasible": true
+    }
+  ]
+}

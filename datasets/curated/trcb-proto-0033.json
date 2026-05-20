@@ -1,0 +1,90 @@
+{
+  "id": "trcb-proto-0033",
+  "language": "python",
+  "family": "data_structure",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-20",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Hierarchical Prefix Frequency Counter",
+    "statement": "Given a list of words, build a structure. Then for each query prefix, return how many words start with that prefix. Return a list of counts corresponding to each query.",
+    "signature": "def solve(words: list[str], queries: list[str]) -> list[int]:",
+    "function_name": "solve",
+    "arguments": ["words", "queries"],
+    "allowed_imports": ["typing", "collections"],
+    "forbidden_imports": ["numpy", "pandas", "networkx", "scipy"],
+    "optimization_constraints": {
+      "time_complexity": "O(total_chars + sum_prefix_lens)",
+      "memory_mb": 128,
+      "rejects_naive": "O(n * max_word_len * q) re-scanning all words for each query is too slow for large hidden cases."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0033.py",
+    "reference_complexity": "O(total_chars + sum_prefix_lens)",
+    "known_valid_paradigms": [
+      "trie_annotated",
+      "sorted_list_bisect",
+      "hashmap_all_prefixes"
+    ],
+    "naive_solution_complexity": "O(n * max_word_len * q)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": false,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": true,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 2,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": ["trie_annotated"]
+  },
+  "tests": {
+    "public_tests": ["tests/public/trcb_proto_0033_test.py"],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.data_structures:prefix_count_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.data_structures:PREFIX_COUNT_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_dict_of_dicts_trie",
+      "type": "forbidden_construct",
+      "forbidden": [
+        "nested_dict_trie_node_pattern",
+        "dict_of_dicts_character_map"
+      ],
+      "reason": "Force sorted list + binary search approach instead of trie",
+      "expected_alternatives": [
+        "sorted_list_bisect",
+        "hashmap_all_prefixes"
+      ],
+      "is_feasible": true
+    }
+  ]
+}

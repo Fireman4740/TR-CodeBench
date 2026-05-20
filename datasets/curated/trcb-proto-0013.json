@@ -1,0 +1,103 @@
+{
+  "id": "trcb-proto-0013",
+  "language": "python",
+  "family": "sorting",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-20",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Circular Successor Magnitude",
+    "statement": "Given a circular array of integers, for each element find the next element that is strictly greater, traversing circularly. Return -1 if no such element exists. Return a list of the same length.",
+    "signature": "def solve(nums: list[int]) -> list[int]:",
+    "function_name": "solve",
+    "arguments": [
+      "nums"
+    ],
+    "allowed_imports": [
+      "collections",
+      "typing"
+    ],
+    "forbidden_imports": [
+      "numpy",
+      "pandas",
+      "networkx",
+      "scipy"
+    ],
+    "optimization_constraints": {
+      "time_complexity": "O(n)",
+      "memory_mb": 128,
+      "rejects_naive": "O(n^2) brute force scan for each element is too slow for large hidden cases."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0013.py",
+    "reference_complexity": "O(n)",
+    "known_valid_paradigms": [
+      "monotonic_stack",
+      "monotonic_stack_reverse",
+      "sparse_table_approach"
+    ],
+    "naive_solution_complexity": "O(n^2)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": false,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 1,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": [
+      "monotonic_stack"
+    ]
+  },
+  "tests": {
+    "public_tests": [
+      "tests/public/trcb_proto_0013_test.py"
+    ],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.sorting:next_greater_circular_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.sorting:NEXT_GREATER_CIRCULAR_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_list_as_stack",
+      "type": "forbidden_structure",
+      "forbidden": [
+        "list.append+list.pop pattern",
+        "stack_via_list"
+      ],
+      "reason": "Force deque or alternative stack implementation",
+      "expected_alternatives": [
+        "monotonic_stack_reverse"
+      ],
+      "is_feasible": true
+    }
+  ]
+}

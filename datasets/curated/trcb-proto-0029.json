@@ -1,0 +1,90 @@
+{
+  "id": "trcb-proto-0029",
+  "language": "python",
+  "family": "string",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-20",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Letter-Equivalent Cluster Partition",
+    "statement": "Given a list of strings, group the anagrams together. Return a list of groups, where each group is a sorted list of strings. The groups should be sorted by their first element.",
+    "signature": "def solve(words: list[str]) -> list[list[str]]:",
+    "function_name": "solve",
+    "arguments": ["words"],
+    "allowed_imports": ["typing", "collections"],
+    "forbidden_imports": ["numpy", "pandas", "networkx", "scipy"],
+    "optimization_constraints": {
+      "time_complexity": "O(n * k log k)",
+      "memory_mb": 128,
+      "rejects_naive": "O(n^2 * k) comparing each pair of words is too slow for large hidden cases."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0029.py",
+    "reference_complexity": "O(n * k log k)",
+    "known_valid_paradigms": [
+      "sort_key_grouping",
+      "count_key_grouping",
+      "prime_product_hashing"
+    ],
+    "naive_solution_complexity": "O(n^2 * k)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": false,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 1,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": ["sort_key_grouping"]
+  },
+  "tests": {
+    "public_tests": ["tests/public/trcb_proto_0029_test.py"],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.strings_extended:anagram_group_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.strings_extended:ANAGRAM_GROUP_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_sorted_key",
+      "type": "forbidden_construct",
+      "forbidden": [
+        "sorted_string_as_dict_key",
+        "sort_characters_for_grouping"
+      ],
+      "reason": "Force character count tuple key instead of sorting strings",
+      "expected_alternatives": [
+        "count_key_grouping",
+        "prime_product_hashing"
+      ],
+      "is_feasible": true
+    }
+  ]
+}

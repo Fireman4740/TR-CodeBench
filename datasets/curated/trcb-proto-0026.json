@@ -1,0 +1,90 @@
+{
+  "id": "trcb-proto-0026",
+  "language": "python",
+  "family": "string",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-20",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Maximum Symmetric Span Within a Text",
+    "statement": "Given a string s, return the length of the longest substring that reads the same forwards and backwards. An empty string has answer 0.",
+    "signature": "def solve(s: str) -> int:",
+    "function_name": "solve",
+    "arguments": ["s"],
+    "allowed_imports": ["typing"],
+    "forbidden_imports": ["numpy", "pandas", "networkx", "scipy"],
+    "optimization_constraints": {
+      "time_complexity": "O(n)",
+      "memory_mb": 128,
+      "rejects_naive": "O(n^3) checking all substrings is too slow for large hidden cases."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0026.py",
+    "reference_complexity": "O(n)",
+    "known_valid_paradigms": [
+      "manacher",
+      "expand_around_center_optimized",
+      "binary_search_rolling_hash"
+    ],
+    "naive_solution_complexity": "O(n^3)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": false,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 1,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": ["manacher"]
+  },
+  "tests": {
+    "public_tests": ["tests/public/trcb_proto_0026_test.py"],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.strings_extended:palindrome_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.strings_extended:PALINDROME_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_manacher_expansion",
+      "type": "forbidden_construct",
+      "forbidden": [
+        "mirror_index_i_plus_1_expansion",
+        "center_right_mirror_pattern"
+      ],
+      "reason": "Force rolling hash or optimized expand approach instead of Manacher's direct pattern",
+      "expected_alternatives": [
+        "binary_search_rolling_hash",
+        "expand_around_center_optimized"
+      ],
+      "is_feasible": true
+    }
+  ]
+}

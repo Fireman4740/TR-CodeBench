@@ -1,0 +1,102 @@
+{
+  "id": "trcb-proto-0019",
+  "language": "python",
+  "family": "dynamic_programming",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-20",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Peak Contiguous Accumulation",
+    "statement": "Given a list of integers, find the contiguous subarray with the largest sum and return that sum. If the list is empty, return 0.",
+    "signature": "def solve(nums: list[int]) -> int:",
+    "function_name": "solve",
+    "arguments": [
+      "nums"
+    ],
+    "allowed_imports": [
+      "typing"
+    ],
+    "forbidden_imports": [
+      "numpy",
+      "pandas",
+      "networkx",
+      "scipy"
+    ],
+    "optimization_constraints": {
+      "time_complexity": "O(n)",
+      "memory_mb": 128,
+      "rejects_naive": "O(n^2) or O(n^3) checking all subarrays is too slow for large hidden cases."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0019.py",
+    "reference_complexity": "O(n)",
+    "known_valid_paradigms": [
+      "kadane_linear",
+      "divide_and_conquer_max_subarray",
+      "prefix_sum_approach"
+    ],
+    "naive_solution_complexity": "O(n^2)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": false,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 0,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": [
+      "kadane_linear"
+    ]
+  },
+  "tests": {
+    "public_tests": [
+      "tests/public/trcb_proto_0019_test.py"
+    ],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.dp:max_subarray_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.dp:MAX_SUBARRAY_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_single_pass",
+      "type": "forbidden_construct",
+      "forbidden": [
+        "single_loop_running_max",
+        "kadane_pattern"
+      ],
+      "reason": "Force divide and conquer O(n log n) approach",
+      "expected_alternatives": [
+        "divide_and_conquer_max_subarray"
+      ],
+      "is_feasible": true
+    }
+  ]
+}
