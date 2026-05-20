@@ -1,0 +1,118 @@
+{
+  "id": "trcb-proto-0010",
+  "language": "python",
+  "family": "scheduling",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-12",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Shortest Available Job Order",
+    "statement": "Each task is (available_at, duration). A single worker may run one task at a time and can only start tasks whose available_at is not greater than the current time. Whenever several tasks are available, run the one with shortest duration, breaking ties by original index. Return the task indices in execution order.",
+    "signature": "def solve(tasks: list[tuple[int, int]]) -> list[int]:",
+    "function_name": "solve",
+    "arguments": [
+      "tasks"
+    ],
+    "allowed_imports": [
+      "heapq",
+      "typing"
+    ],
+    "forbidden_imports": [
+      "numpy",
+      "pandas"
+    ],
+    "optimization_constraints": {
+      "time_complexity": "O(n log n)",
+      "memory_mb": 128,
+      "rejects_naive": "Rescanning every waiting task at every step is too slow."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0010.py",
+    "reference_complexity": "O(n log n)",
+    "known_valid_paradigms": [
+      "greedy_heap",
+      "event_sweep_with_priority_queue",
+      "balanced_tree_scheduler"
+    ],
+    "naive_solution_complexity": "O(n^2)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": true,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 1,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": [
+      "greedy_heap",
+      "event_sweep_with_priority_queue"
+    ]
+  },
+  "tests": {
+    "public_tests": [
+      "tests/public/trcb_proto_0010_test.py"
+    ],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.arrays:heap_scheduling_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.arrays:HEAP_SCHEDULING_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_heapq",
+      "type": "forbidden_import",
+      "forbidden": [
+        "heapq"
+      ],
+      "reason": "Force balanced tree or alternative scheduling",
+      "expected_alternatives": [
+        "balanced_tree_scheduler",
+        "event_sweep_with_priority_queue"
+      ],
+      "is_feasible": true
+    },
+    {
+      "id": "deny_bisect",
+      "type": "forbidden_api",
+      "forbidden": [
+        "bisect",
+        "bisect_left",
+        "bisect_right",
+        "SortedList"
+      ],
+      "reason": "Force heap-based scheduling",
+      "expected_alternatives": [
+        "greedy_heap",
+        "event_sweep_with_priority_queue"
+      ],
+      "is_feasible": true
+    }
+  ]
+}

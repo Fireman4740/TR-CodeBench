@@ -1,0 +1,118 @@
+{
+  "id": "trcb-proto-0006",
+  "language": "python",
+  "family": "strings",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-12",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "All Exact Pattern Starts",
+    "statement": "Return every starting index where pattern occurs in text, including overlapping occurrences. If pattern is empty, return every index from 0 through len(text).",
+    "signature": "def solve(text: str, pattern: str) -> list[int]:",
+    "function_name": "solve",
+    "arguments": [
+      "text",
+      "pattern"
+    ],
+    "allowed_imports": [
+      "typing"
+    ],
+    "forbidden_imports": [
+      "re",
+      "numpy",
+      "pandas"
+    ],
+    "optimization_constraints": {
+      "time_complexity": "O(len(text) + len(pattern)) preferred",
+      "memory_mb": 64,
+      "rejects_naive": "Repeated slicing can be too slow for adversarial repeated strings."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0006.py",
+    "reference_complexity": "O(n + m)",
+    "known_valid_paradigms": [
+      "kmp",
+      "rolling_hash_with_verification",
+      "z_algorithm"
+    ],
+    "naive_solution_complexity": "O(n*m)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": false,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": true,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 2,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": [
+      "kmp"
+    ]
+  },
+  "tests": {
+    "public_tests": [
+      "tests/public/trcb_proto_0006_test.py"
+    ],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.strings:kmp_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.strings:KMP_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_kmp_prefix",
+      "type": "forbidden_paradigm",
+      "forbidden": [
+        "kmp",
+        "prefix_function",
+        "failure_function"
+      ],
+      "reason": "Force rolling hash or Z-algorithm",
+      "expected_alternatives": [
+        "rolling_hash_with_verification",
+        "z_algorithm"
+      ],
+      "is_feasible": true
+    },
+    {
+      "id": "deny_hash_approach",
+      "type": "forbidden_paradigm",
+      "forbidden": [
+        "rolling_hash",
+        "hash"
+      ],
+      "reason": "Force KMP or Z-algorithm",
+      "expected_alternatives": [
+        "kmp",
+        "z_algorithm"
+      ],
+      "is_feasible": true
+    }
+  ]
+}

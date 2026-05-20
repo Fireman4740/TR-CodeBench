@@ -1,0 +1,117 @@
+{
+  "id": "trcb-proto-0009",
+  "language": "python",
+  "family": "data_structures",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-12",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Point Updates and Half-Open Range Sums",
+    "statement": "Start with an array of n zeros. Operation ('add', index, delta) adds delta to one position. Operation ('sum', left, right) asks for the sum over the half-open range [left, right). Return the answers to sum operations in order.",
+    "signature": "def solve(n: int, operations: list[tuple[str, int, int]]) -> list[int]:",
+    "function_name": "solve",
+    "arguments": [
+      "n",
+      "operations"
+    ],
+    "allowed_imports": [
+      "typing"
+    ],
+    "forbidden_imports": [
+      "numpy",
+      "pandas"
+    ],
+    "optimization_constraints": {
+      "time_complexity": "O((u + q) log n)",
+      "memory_mb": 128,
+      "rejects_naive": "Scanning the whole range for each query is too slow."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0009.py",
+    "reference_complexity": "O((u + q) log n)",
+    "known_valid_paradigms": [
+      "fenwick_tree",
+      "segment_tree",
+      "sqrt_decomposition"
+    ],
+    "naive_solution_complexity": "O(n*q)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": false,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": true,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 0,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": [
+      "fenwick_tree"
+    ]
+  },
+  "tests": {
+    "public_tests": [
+      "tests/public/trcb_proto_0009_test.py"
+    ],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.arrays:fenwick_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.arrays:FENWICK_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_fenwick",
+      "type": "forbidden_paradigm",
+      "forbidden": [
+        "fenwick",
+        "BIT",
+        "binary_indexed_tree"
+      ],
+      "reason": "Force segment tree or sqrt decomposition",
+      "expected_alternatives": [
+        "segment_tree",
+        "sqrt_decomposition"
+      ],
+      "is_feasible": true
+    },
+    {
+      "id": "deny_segment_tree",
+      "type": "forbidden_paradigm",
+      "forbidden": [
+        "segment_tree",
+        "seg_tree"
+      ],
+      "reason": "Force Fenwick tree or sqrt decomposition",
+      "expected_alternatives": [
+        "fenwick_tree",
+        "sqrt_decomposition"
+      ],
+      "is_feasible": true
+    }
+  ]
+}

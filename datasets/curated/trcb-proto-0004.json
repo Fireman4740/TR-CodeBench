@@ -1,0 +1,118 @@
+{
+  "id": "trcb-proto-0004",
+  "language": "python",
+  "family": "arrays",
+  "source_type": "parametric",
+  "source": {
+    "origin": "local_parametric_template",
+    "repo": null,
+    "commit_sha": null,
+    "url": null,
+    "date": "2026-05-12",
+    "license": "project-local"
+  },
+  "task": {
+    "title": "Shortest Nonnegative Segment Reaching a Target",
+    "statement": "Given a list of nonnegative integers and a positive target, return the length of the shortest contiguous segment with sum at least target. Return 0 if no such segment exists.",
+    "signature": "def solve(nums: list[int], target: int) -> int:",
+    "function_name": "solve",
+    "arguments": [
+      "nums",
+      "target"
+    ],
+    "allowed_imports": [
+      "bisect",
+      "collections",
+      "typing"
+    ],
+    "forbidden_imports": [
+      "numpy",
+      "pandas"
+    ],
+    "optimization_constraints": {
+      "time_complexity": "O(n)",
+      "memory_mb": 64,
+      "rejects_naive": "Testing every subarray is too slow for large hidden cases."
+    }
+  },
+  "oracle": {
+    "reference_solution_path": "oracles/trcb_proto_0004.py",
+    "reference_complexity": "O(n)",
+    "known_valid_paradigms": [
+      "two_pointers",
+      "prefix_sums_binary_search",
+      "monotone_queue_generalization"
+    ],
+    "naive_solution_complexity": "O(n^2)",
+    "oracle_ast_features": {
+      "syntax_error": false,
+      "recursion": false,
+      "heapq": false,
+      "bisect": false,
+      "deque": false,
+      "dict_memo": false,
+      "union_find": false,
+      "fenwick": false,
+      "kmp_prefix_table": false,
+      "rolling_hash": false,
+      "z_algorithm": false,
+      "nested_loops": 1,
+      "adjacency_list": false,
+      "coordinate_compression": false
+    },
+    "oracle_detected_paradigms": [
+      "two_pointers"
+    ]
+  },
+  "tests": {
+    "public_tests": [
+      "tests/public/trcb_proto_0004_test.py"
+    ],
+    "hidden_tests_sha256": "generated-locally-v0",
+    "hypothesis_strategy": "strategies.arrays:subarray_case_strategy",
+    "n_hidden_cases": 100,
+    "pbt_groups": "strategies.arrays:SUBARRAY_PBT_GROUPS"
+  },
+  "anti_contamination": {
+    "paraphrased": true,
+    "identifier_obfuscated": true,
+    "minhash_vs_original": null,
+    "is_honeypot": false
+  },
+  "scoring": {
+    "correctness_weight": 0.5,
+    "pbt_weight": 0.2,
+    "optimization_weight": 0.15,
+    "productive_divergence_weight": 0.15
+  },
+  "denial_constraints": [
+    {
+      "id": "deny_two_pointers",
+      "type": "forbidden_structure",
+      "forbidden": [
+        "nested loops"
+      ],
+      "reason": "Force prefix-sum or monotone queue approach",
+      "expected_alternatives": [
+        "prefix_sums_binary_search",
+        "monotone_queue_generalization"
+      ],
+      "is_feasible": true
+    },
+    {
+      "id": "deny_bisect",
+      "type": "forbidden_api",
+      "forbidden": [
+        "bisect",
+        "bisect_left",
+        "bisect_right"
+      ],
+      "reason": "Force non-binary-search solution",
+      "expected_alternatives": [
+        "two_pointers",
+        "monotone_queue_generalization"
+      ],
+      "is_feasible": true
+    }
+  ]
+}
