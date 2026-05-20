@@ -19,6 +19,7 @@ from .paradigm_classifier import is_genuine_divergence, paradigm_distance as com
 from .paradigm_evidence import enhance_candidate_paradigms
 from .run_candidate import load_function_from_path, normalize_value, run_one_case
 from .salieri_minhash import file_similarity
+from .metrics_profile import compute_metrics_profile
 from .scoring import compute_score
 from .static_checks import analyze_candidate
 
@@ -422,10 +423,18 @@ def evaluate_candidate(
     }
     score = compute_score(metrics)
 
+    # Compute independent metrics profile (5 axes)
+    metrics_profile = compute_metrics_profile(
+        metrics=metrics,
+        complexity_profile=complexity_profile,
+        is_genuine_divergence=genuine_divergence,
+    )
+
     return {
         "item_id": item_id,
         "candidate": str(candidate),
         "metrics": metrics,
+        "metrics_profile": metrics_profile,
         "score": score,
         "static_checks": static,
         "paradigm_features": candidate_features,

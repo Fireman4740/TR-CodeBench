@@ -257,7 +257,69 @@ Génère les cas cachés à partir des oracles. Taille par défaut : `n ∈ [100
 
 ---
 
-## 5. Formule de score — spécification complète
+## 5. Système de métriques — spécification complète
+
+### 5.0 Profil multi-axes (v0.3+, principal)
+
+> **Depuis v0.3, TR-CodeBench reporte un profil de 5 métriques indépendantes** au lieu d'un score composite unique. Chaque axe est interprétable seul et agrégeable séparément.
+
+| Axe             | Clé JSON      | Échelle          | Ce qu'il mesure                                     |
+| --------------- | ------------- | ---------------- | --------------------------------------------------- |
+| **Correctness** | `correctness` | 0 ou 1 (binaire) | Tous les tests publics + cachés passent             |
+| **Robustness**  | `robustness`  | [0, 1] continu   | Résistance au PBT (property-based testing)          |
+| **Efficiency**  | `efficiency`  | [0, 1] ou `null` | Conformité au régime de complexité attendu          |
+| **Divergence**  | `divergence`  | [0, 1] ou `null` | Divergence de paradigme vs l'oracle                 |
+| **Safety**      | `safety`      | 0 ou 1 (binaire) | Absence de crash, violation statique, hallucination |
+
+**Propriétés clés :**
+
+- Chaque axe est **indépendant** : on peut comparer deux modèles sur un axe précis
+- `null` signifie "non évaluable" (ex: efficiency si correctness = 0)
+- Agrégation par modèle = moyenne par axe (les `null` sont exclus)
+- Pas de pondération arbitraire entre les axes
+
+```python
+# Sortie JSON (metrics_profile)
+{
+  "correctness": 1.0,
+  "robustness": 0.92,
+  "efficiency": 0.78,
+  "divergence": 0.45,
+  "safety": 1.0
+}
+```
+
+#### Calcul de chaque axe
+
+```python
+# Correctness (gate binaire)
+correctness = 1.0 if public_pass_rate == 1.0 AND hidden_pass_rate == 1.0 else 0.0
+
+# Robustness
+robustness = 0.7 × pbt_gate_passed + 0.3 × pbt_group_pass_rate
+
+# Efficiency (continu, utilise le ratio brut)
+if correctness < 1.0 or complexity_ratio_ok is None:
+    efficiency = null
+elif complexity_ratio_ok == False:
+    efficiency = 0.0
+else:
+    efficiency = clamp(1.0 − ratio / ratio_max, 0, 1)
+
+# Divergence (continu, avec gates)
+if correctness < 1.0:
+    divergence = null
+elif complexity_ratio_ok == False:
+    divergence = 0.0
+elif salieri_overlap > 0.70 or paradigm_distance < 0.20:
+    divergence = 0.0
+else:
+    divergence = HM(paradigm_distance, 1 − salieri_overlap)
+    if is_genuine_divergence: divergence = min(1.0, divergence × 1.2)
+
+# Safety (binaire inversé)
+safety = 0.0 if (static_violation OR crash OR hidden_pass_rate < 1.0) else 1.0
+```
 
 ### 5.1 Métriques brutes
 
@@ -275,7 +337,9 @@ Génère les cas cachés à partir des oracles. Taille par défaut : `n ∈ [100
 | `productivity_score`  | float [0,1] | HM(efficiency_from_ratio, pbt_pass_rate)             |
 | `complexity_ratio_ok` | bool ∣ None | t_large/t_small ≤ ratio_max (None si indéterminé)    |
 
-### 5.2 Scores composites
+### 5.2 Score composite legacy (DEPRECATED)
+
+> ⚠️ Le score composite ci-dessous est conservé pour backward-compatibility mais **ne constitue plus la métrique principale**. Utiliser `metrics_profile` pour toute nouvelle analyse.
 
 ```python
 # Correctness
