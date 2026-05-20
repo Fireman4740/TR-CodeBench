@@ -16,18 +16,18 @@ This v0.1 scaffold contains 10 end-to-end algorithmic items. It is designed to p
 
 Current items:
 
-| ID | Topic | Required shape |
-| --- | --- | --- |
-| `trcb-proto-0001` | LIS | `O(n log n)` |
-| `trcb-proto-0002` | positive shortest path | `O((n + m) log n)` |
-| `trcb-proto-0003` | interval scheduling | `O(n log n)` |
-| `trcb-proto-0004` | shortest target subarray | `O(n)` |
-| `trcb-proto-0005` | union-find connectivity | near-linear |
-| `trcb-proto-0006` | exact string matching | `O(n + m)` preferred |
-| `trcb-proto-0007` | sliding window maximum | `O(n)` |
-| `trcb-proto-0008` | longest path in DAG | `O(n + m)` |
-| `trcb-proto-0009` | point updates/range sums | `O(log n)` per op |
-| `trcb-proto-0010` | heap scheduling | `O(n log n)` |
+| ID                | Topic                    | Required shape       |
+| ----------------- | ------------------------ | -------------------- |
+| `trcb-proto-0001` | LIS                      | `O(n log n)`         |
+| `trcb-proto-0002` | positive shortest path   | `O((n + m) log n)`   |
+| `trcb-proto-0003` | interval scheduling      | `O(n log n)`         |
+| `trcb-proto-0004` | shortest target subarray | `O(n)`               |
+| `trcb-proto-0005` | union-find connectivity  | near-linear          |
+| `trcb-proto-0006` | exact string matching    | `O(n + m)` preferred |
+| `trcb-proto-0007` | sliding window maximum   | `O(n)`               |
+| `trcb-proto-0008` | longest path in DAG      | `O(n + m)`           |
+| `trcb-proto-0009` | point updates/range sums | `O(log n)` per op    |
+| `trcb-proto-0010` | heap scheduling          | `O(n log n)`         |
 
 ## Install
 
@@ -170,11 +170,10 @@ Keep oracle code, hidden tests, and source metadata separated from prompts shown
 - Static API checks are AST heuristics, not a full policy engine.
 - Optimization scoring is binary in v0 and should be replaced by calibrated stress tests for v0.2.
 
-
-V0.2 
+V0.2
 ./scripts/run_openrouter_eval.sh \
-  --max-items all \
-  --n-runs 1 \
-  --hidden-cases 30 \
-  --pbt-cases 10 \
-  --max-workers 10
+ --max-items all \
+ --n-runs 1 \
+ --hidden-cases 30 \
+ --pbt-cases 10 \
+ --max-workers 10
