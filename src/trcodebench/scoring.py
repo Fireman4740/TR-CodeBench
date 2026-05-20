@@ -1,9 +1,26 @@
+"""Scoring module for TR-CodeBench.
+
+DEPRECATED composite score kept for backward compatibility.
+Prefer metrics_profile.compute_metrics_profile() for the 5-axis independent profile.
+"""
+
 from __future__ import annotations
 
 from typing import Any
 
-SALIERI_MEMORISATION_THRESHOLD = 0.70
-PARADIGM_COSMETIC_THRESHOLD = 0.20
+from .metrics_profile import (
+    PARADIGM_COSMETIC_THRESHOLD,
+    SALIERI_MEMORISATION_THRESHOLD,
+    compute_metrics_profile,
+)
+
+# Re-export thresholds for backward compatibility
+__all__ = [
+    "SALIERI_MEMORISATION_THRESHOLD",
+    "PARADIGM_COSMETIC_THRESHOLD",
+    "compute_score",
+    "compute_metrics_profile",
+]
 
 
 def _harmonic_mean_3(a: float, b: float, c: float) -> float:
@@ -13,6 +30,11 @@ def _harmonic_mean_3(a: float, b: float, c: float) -> float:
 
 
 def compute_score(metrics: dict[str, Any]) -> dict[str, Any]:
+    """Compute the legacy composite score (DEPRECATED).
+
+    This function is preserved for backward compatibility. New code should use
+    compute_metrics_profile() from metrics_profile.py which returns independent axes.
+    """
     pbt_gate_passed = bool(metrics.get("pbt_gate_passed", True))
     pbt_group_pass_rate = float(metrics.get("pbt_group_pass_rate", 1.0))
     robustness_score = round(0.7 * float(pbt_gate_passed) + 0.3 * pbt_group_pass_rate, 6)
@@ -59,6 +81,7 @@ def compute_score(metrics: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "score": final,
+        "score_deprecated": True,
         "correctness_score": correctness_score,
         "optimization_score": optimization_score,
         "pd_score": pd_score,

@@ -229,6 +229,7 @@ class OpenRouterRunner:
         usage = (response_json or {}).get("usage") or {}
         score = (eval_result or {}).get("score") or {}
         metrics = (eval_result or {}).get("metrics") or {}
+        metrics_profile = (eval_result or {}).get("metrics_profile") or {}
         suites = (eval_result or {}).get("suites") or {}
         public_suite = suites.get("public") or {}
         hidden_suite = suites.get("hidden") or {}
@@ -248,7 +249,15 @@ class OpenRouterRunner:
             "prompt_tokens": usage.get("prompt_tokens"),
             "completion_tokens": usage.get("completion_tokens"),
             "total_tokens": usage.get("total_tokens"),
+            # Legacy composite score (deprecated)
             "score": score.get("score"),
+            # Independent metrics profile (5 axes)
+            "mp_correctness": metrics_profile.get("correctness"),
+            "mp_robustness": metrics_profile.get("robustness"),
+            "mp_efficiency": metrics_profile.get("efficiency"),
+            "mp_divergence": metrics_profile.get("divergence"),
+            "mp_safety": metrics_profile.get("safety"),
+            # Legacy sub-scores
             "correctness_score": score.get("correctness_score"),
             "optimization_score": score.get("optimization_score"),
             "pd_score": score.get("pd_score"),
