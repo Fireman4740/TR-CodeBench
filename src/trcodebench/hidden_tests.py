@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import importlib
 import random
+import warnings
 from typing import Any
 
 
@@ -131,6 +133,32 @@ GENERATORS = {
 }
 
 
+def _generate_from_strategy(item: dict[str, Any], n_cases: int) -> list[dict[str, Any]]:
+    strategy_ref = item["tests"].get("hypothesis_strategy")
+    if not strategy_ref:
+        raise KeyError(f"No hidden generator registered for {item['id']}")
+
+    mod_name, fn_name = strategy_ref.split(":", 1)
+    factory = getattr(importlib.import_module(mod_name), fn_name)
+    strategy = factory()
+
+    cases: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    attempts = max(n_cases * 5, 10)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for _ in range(attempts):
+            case = strategy.example()
+            key = repr(case)
+            if key in seen:
+                continue
+            seen.add(key)
+            cases.append(case)
+            if len(cases) >= n_cases:
+                break
+    return cases
+
+
 def generate_cases(
     item: dict[str, Any],
     limit: int | None = None,
@@ -138,9 +166,9 @@ def generate_cases(
     size_override: int | None = None,
 ) -> list[dict[str, Any]]:
     item_id = item["id"]
-    if item_id not in GENERATORS:
-        raise KeyError(f"No hidden generator registered for {item_id}")
     n_cases = limit if limit is not None else int(item["tests"].get("n_hidden_cases", 100))
+    if item_id not in GENERATORS:
+        return _generate_from_strategy(item, n_cases)
     rng = random.Random(seed if seed is not None else item_id)
     generator = GENERATORS[item_id]
     return [generator(rng, size_override) for _ in range(n_cases)]

@@ -17,3 +17,5 @@ venv/
 
 tmp/
 reports/openrouter_runs/
+.conda
+.conda/*

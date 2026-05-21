@@ -362,7 +362,8 @@ class OpenRouterRunner:
 
         rows: list[dict[str, Any]] = []
         write_lock = Lock()
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+        executor = ThreadPoolExecutor(max_workers=self.max_workers)
+        try:
             future_to_job = {executor.submit(self.run_one_experiment, job): job for job in jobs}
             for completed, future in enumerate(as_completed(future_to_job), start=1):
                 model, item_id, run_index = future_to_job[future]
@@ -385,6 +386,13 @@ class OpenRouterRunner:
                         handle.write(json.dumps(row, sort_keys=True) + "\n")
                 status = "ERROR" if row.get("api_error") else f"score={row.get('score')}"
                 print(f"[{completed}/{len(jobs)}] {model} {item_id} run={run_index}: {status}", flush=True)
+        except KeyboardInterrupt:
+            executor.shutdown(wait=False, cancel_futures=True)
+            self._write_csv(rows)
+            print(f"\nInterrupted. Wrote partial CSV with {len(rows)} rows: {self.results_csv}")
+            raise
+        else:
+            executor.shutdown(wait=True)
 
         self._write_csv(rows)
         print(f"CSV output:   {self.results_csv}")
