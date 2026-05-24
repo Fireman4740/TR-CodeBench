@@ -1,61 +1,162 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "TR-CodeBench Proto Item",
+  "title": "TR-CodeBench Item",
+  "description": "Schema for a single TR-CodeBench benchmark item (trcb-proto-XXXX.json).",
   "type": "object",
   "required": ["id", "language", "family", "source_type", "source", "task", "oracle", "tests", "anti_contamination", "scoring"],
+  "additionalProperties": false,
   "properties": {
-    "id": {"type": "string", "pattern": "^trcb-proto-[0-9]{4}$"},
-    "language": {"const": "python"},
-    "family": {"type": "string"},
-    "source_type": {"type": "string"},
-    "source": {"type": "object"},
+    "id": {
+      "type": "string",
+      "pattern": "^trcb-proto-[0-9]{4}$"
+    },
+    "language": { "const": "python" },
+    "family": {
+      "type": "string",
+      "enum": [
+        "dynamic_programming",
+        "graph",
+        "sorting",
+        "string",
+        "data_structure",
+        "math",
+        "arrays",
+        "intervals",
+        "scheduling"
+      ]
+    },
+    "source_type": { "type": "string" },
+    "source": {
+      "type": "object",
+      "required": ["origin", "date", "license"],
+      "properties": {
+        "origin": { "type": "string" },
+        "repo":   { "type": ["string", "null"] },
+        "commit_sha": { "type": ["string", "null"] },
+        "url":    { "type": ["string", "null"] },
+        "date":   { "type": "string" },
+        "license": { "type": "string" }
+      }
+    },
     "task": {
       "type": "object",
       "required": ["title", "statement", "signature", "function_name", "arguments", "allowed_imports", "forbidden_imports", "optimization_constraints"],
+      "additionalProperties": false,
       "properties": {
-        "title": {"type": "string"},
-        "statement": {"type": "string"},
-        "signature": {"type": "string"},
-        "function_name": {"type": "string"},
-        "arguments": {"type": "array", "items": {"type": "string"}},
-        "allowed_imports": {"type": "array", "items": {"type": "string"}},
-        "forbidden_imports": {"type": "array", "items": {"type": "string"}},
-        "optimization_constraints": {"type": "object"}
+        "title": { "type": "string" },
+        "statement": { "type": "string" },
+        "signature": { "type": "string" },
+        "function_name": { "type": "string" },
+        "arguments": { "type": "array", "items": { "type": "string" } },
+        "allowed_imports": { "type": "array", "items": { "type": "string" } },
+        "forbidden_imports": { "type": "array", "items": { "type": "string" } },
+        "optimization_constraints": {
+          "type": "object",
+          "required": ["time_complexity", "memory_mb", "rejects_naive"],
+          "properties": {
+            "time_complexity": { "type": "string" },
+            "memory_mb": { "type": "integer" },
+            "rejects_naive": { "type": "string" }
+          }
+        }
       }
     },
     "oracle": {
       "type": "object",
       "required": ["reference_solution_path", "reference_complexity", "known_valid_paradigms", "naive_solution_complexity"],
+      "additionalProperties": false,
       "properties": {
-        "reference_solution_path": {"type": "string"},
-        "reference_complexity": {"type": "string"},
-        "known_valid_paradigms": {"type": "array", "items": {"type": "string"}},
-        "naive_solution_complexity": {"type": "string"},
-        "oracle_paradigm_features": {
+        "reference_solution_path": { "type": "string" },
+        "reference_complexity": { "type": "string" },
+        "known_valid_paradigms": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "naive_solution_complexity": { "type": "string" },
+        "oracle_ast_features": {
           "type": "object",
-          "description": "AST feature signature of the reference oracle, used to verify genuine divergence.",
+          "description": "Pre-computed AST feature vector of the reference oracle (frozen reference for paradigm distance). Run scripts/annotate_oracle_features.py to populate.",
           "additionalProperties": true
+        },
+        "oracle_detected_paradigms": {
+          "type": "array",
+          "description": "Paradigms detected in the oracle by paradigm_classifier at annotation time.",
+          "items": { "type": "string" }
         }
       }
     },
     "tests": {
       "type": "object",
-      "required": ["public_tests", "hidden_tests_sha256", "hypothesis_strategy", "n_hidden_cases"]
+      "required": ["public_tests", "hidden_tests_sha256", "hypothesis_strategy", "n_hidden_cases"],
+      "additionalProperties": false,
+      "properties": {
+        "public_tests": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "hidden_tests_sha256": { "type": "string" },
+        "hypothesis_strategy": { "type": "string" },
+        "n_hidden_cases": { "type": "integer", "minimum": 1 },
+        "pbt_groups": { "type": ["string", "null"] }
+      }
     },
-    "anti_contamination": {"type": "object"},
+    "anti_contamination": {
+      "type": "object",
+      "required": ["paraphrased", "identifier_obfuscated", "is_honeypot"],
+      "additionalProperties": true,
+      "properties": {
+        "paraphrased": { "type": "boolean" },
+        "identifier_obfuscated": { "type": "boolean" },
+        "minhash_vs_original": { "type": ["number", "null"] },
+        "is_honeypot": { "type": "boolean" }
+      }
+    },
     "scoring": {
       "type": "object",
+      "additionalProperties": true,
       "properties": {
+        "correctness_weight": { "type": "number" },
+        "pbt_weight": { "type": "number" },
+        "optimization_weight": { "type": "number" },
+        "productive_divergence_weight": { "type": "number" },
         "complexity_stress": {
           "type": "object",
           "properties": {
-            "small_size": {"type": "integer"},
-            "large_size": {"type": "integer"},
-            "ratio_max": {"type": "number"}
+            "small_size": { "type": "integer" },
+            "large_size": { "type": "integer" },
+            "ratio_max": { "type": "number" }
           }
         }
-      },
-      "additionalProperties": true
+      }
+    },
+    "denial_constraints": {
+      "type": "array",
+      "description": "Successive paradigm-elicitation constraints for denial-trajectory evaluation.",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "forbidden", "reason", "is_feasible"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": [
+              "forbidden_api",
+              "forbidden_import",
+              "forbidden_structure",
+              "forbidden_paradigm",
+              "forbidden_construct",
+              "resource"
+            ]
+          },
+          "forbidden": { "type": "array", "items": { "type": "string" } },
+          "reason": { "type": "string" },
+          "expected_alternatives": { "type": "array", "items": { "type": "string" } },
+          "is_feasible": { "type": "boolean" }
+        }
+      }
     }
   }
 }

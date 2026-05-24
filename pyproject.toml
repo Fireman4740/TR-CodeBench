@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "trcodebench"
+version = "0.3.0"
+description = "Executable T2 Truth Regime benchmark for measuring Productive Divergence in LLM-generated code"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = ["benchmark", "llm", "code-evaluation", "productive-divergence", "property-based-testing"]
+
+dependencies = [
+    "hypothesis>=6.100",
+    "requests>=2.31",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "jsonschema>=4.20",
+    "ruff>=0.4",
+    "mypy>=1.10",
+]
+notebook = [
+    "jupyterlab>=4.0",
+    "ipykernel>=6.29",
+    "nbconvert>=7.0",
+    "numpy>=1.26",
+    "pandas>=2.0",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+]
+
+[project.scripts]
+trcodebench-evaluate  = "trcodebench.evaluate:main"
+trcodebench-openrouter = "trcodebench.openrouter_runner:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+trcodebench = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "-q"
+python_files = ["*_test.py", "test_*.py"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true

@@ -82,6 +82,34 @@ def _has_explicit_sort(source: str) -> bool:
     return False
 
 
+def _has_nested_for_loops(source: str) -> bool:
+    """True if source contains nested `for` loops (for inside for, ignoring while)."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return False
+    for node in ast.walk(tree):
+        if isinstance(node, ast.For):
+            for child in ast.walk(node):
+                if child is not node and isinstance(child, ast.For):
+                    return True
+    return False
+
+
+def _has_nested_while_loops(source: str) -> bool:
+    """True if source contains nested `while` loops."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return False
+    for node in ast.walk(tree):
+        if isinstance(node, ast.While):
+            for child in ast.walk(node):
+                if child is not node and isinstance(child, ast.While):
+                    return True
+    return False
+
+
 def verify_denial(
     source: str,
     constraint: DenialConstraint,
@@ -135,8 +163,59 @@ def verify_denial(
                     return False, f"Paradigm '{pattern}' mentioned in comments"
         return True, None
 
+    elif constraint.constraint_type == "forbidden_construct":
+        # General-purpose construct check: combines name, import, and structural pattern matching.
+        violations: list[str] = []
+        names = _collect_names(source)
+        imports = _collect_imports(source)
+
+        for pattern in constraint.forbidden:
+            normalized = pattern.lower().replace("_", " ").strip()
+
+            # Structural patterns — explicit keywords
+            if normalized in ("nested for loops", "nested_for_loops"):
+                if _has_nested_for_loops(source):
+                    violations.append(pattern)
+                continue
+            if normalized in ("nested while loops", "nested_while_loops"):
+                if _has_nested_while_loops(source):
+                    violations.append(pattern)
+                continue
+            if normalized in ("nested loops", "nested loop"):
+                if _has_nested_loops(source):
+                    violations.append(pattern)
+                continue
+            if normalized in ("recursion", "recursive call", "recursive"):
+                if _has_recursion(source):
+                    violations.append(pattern)
+                continue
+            if normalized in ("explicit sort", "sort", "sorting"):
+                if _has_explicit_sort(source):
+                    violations.append(pattern)
+                continue
+
+            # Dotted reference (e.g., "collections.OrderedDict") → check import + attr
+            if "." in pattern:
+                parts = pattern.split(".")
+                root, leaf = parts[0], parts[-1]
+                if root in imports and leaf in names:
+                    violations.append(pattern)
+                continue
+
+            # Underscore-suffixed hints (e.g., "OrderedDict_import_usage") → strip suffix
+            bare = re.sub(r"_(import_usage|usage|api|call|reference)$", "", pattern, flags=re.I)
+
+            # Plain name check
+            if bare in names or bare in imports:
+                violations.append(pattern)
+
+        if violations:
+            return False, f"Forbidden construct used: {', '.join(violations)}"
+        return True, None
+
     elif constraint.constraint_type == "resource":
         # Resource constraints are verified via stress tests externally.
         return True, None
 
+    # Unknown type: log and pass through (no false positives)
     return True, None

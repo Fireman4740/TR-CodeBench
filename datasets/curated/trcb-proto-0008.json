@@ -1,7 +1,7 @@
 {
   "id": "trcb-proto-0008",
   "language": "python",
-  "family": "graph_dp",
+  "family": "graph",
   "source_type": "parametric",
   "source": {
     "origin": "local_parametric_template",

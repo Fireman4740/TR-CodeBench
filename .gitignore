@@ -19,3 +19,7 @@ tmp/
 reports/openrouter_runs/
 .conda
 .conda/*
+
+# macOS metadata
+.DS_Store
+**/.DS_Store

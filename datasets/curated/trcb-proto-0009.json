@@ -1,7 +1,7 @@
 {
   "id": "trcb-proto-0009",
   "language": "python",
-  "family": "data_structures",
+  "family": "data_structure",
   "source_type": "parametric",
   "source": {
     "origin": "local_parametric_template",

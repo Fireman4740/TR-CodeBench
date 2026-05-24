@@ -2,7 +2,16 @@
 
 > Document de référence technique exhaustif.  
 > Couvre le contexte théorique, les décisions d'architecture, l'historique des versions, l'état de l'art, la revue critique et la feuille de route.  
-> Dernière mise à jour : **2026-05-20** — run `openrouter_eval_20260512T220239Z` (v0.3 interne, 5 modèles × 10 items)
+> Dernière mise à jour : **2026-05-24** — dataset à **40 items** (`trcb-proto-0001` … `0040`).  
+> Dernier run live de référence : `openrouter_eval_20260512T220239Z` (v0.3, 5 modèles × 10 items).
+
+> **Note d'évolution (v0.4).** Le dépôt a dépassé le périmètre décrit dans les sections historiques ci-dessous :
+> - le dataset compte désormais **40 items paramétriques** répartis en ~12 familles (DP, graphes, tris, chaînes, structures de données, maths, intervalles, scheduling) ;
+> - le scoring principal est le **profil 5 axes** (`metrics_profile.py`), le composite étant déprécié ;
+> - deux modules majeurs ont été ajoutés : **`paradigm_evidence/`** (pile de preuves multi-couches pour les paradigmes fragiles — réponse au §9.2) et **`denial/`** (trajectoires de contraintes successives — réponse au §11.5) ;
+> - chaque item porte désormais `denial_constraints`, `anti_contamination`, et un bloc `task` enrichi (title/statement/signature/imports).
+>
+> Les sections 6, 8 et 10 reflètent encore l'état v0.1–v0.3 (10 items) et doivent être lues comme historiques en attendant un nouveau run live sur les 40 items.
 
 ---
 
@@ -97,19 +106,30 @@ La PD n'a de sens que dans un contexte T2 : sans correctness vérifiable, n'impo
 
 ```
 TR-CodeBench/
-├── datasets/curated/           # 10 items JSON (trcb-proto-0001 à 0010)
-├── oracles/                    # Solutions de référence Python
-├── tests/public/               # 5 cas publics par item (pytest)
-├── strategies/                 # Stratégies Hypothesis par item
+├── datasets/curated/           # 40 items JSON (trcb-proto-0001 à 0040)
+├── oracles/                    # 40 solutions de référence Python
+├── candidates/                 # Exemples + baselines naïves (validation du discriminant de complexité)
+├── tests/public/               # Cas publics par item (pytest)
+├── tests/unit/                 # Tests unitaires des modules (scoring, ast, classifier…)
+├── strategies/                 # Stratégies Hypothesis par famille
 ├── schemas/                    # item.schema.json — contrat JSON des items
 ├── src/trcodebench/
 │   ├── ast_features.py         # Extraction features AST (bisect, heapq, fenwick…)
 │   ├── paradigm_classifier.py  # Signatures de paradigmes + détection
-│   ├── paradigm_evidence/      # Enrichissement multi-couche des paradigmes
+│   ├── paradigm_evidence/      # Pile de preuves multi-couches (ast/structural/dataflow/behavioral)
+│   │   ├── evidence_fusion.py  #   Fusion pondérée + décision accept/judge/abstain
+│   │   ├── ast_signals.py / dataflow_signals.py / behavioral_probes.py
+│   │   └── schema.py
+│   ├── denial/                 # Trajectoires de contraintes successives (PD multi-étapes)
+│   │   ├── denial_schema.py    #   DenialConstraint / DenialStepResult / DenialTrajectory
+│   │   ├── build_denial_prompt.py / select_next_constraint.py
+│   │   ├── verify_denial.py    #   Vérifie le respect de la contrainte (AST)
+│   │   ├── run_denial_trajectory.py / denial_scoring.py
 │   ├── salieri_minhash.py      # Jaccard 5-grams de tokens normalisés
-│   ├── scoring.py              # Formule de score (source of truth)
+│   ├── metrics_profile.py      # Profil 5 axes (PRINCIPAL)
+│   ├── scoring.py              # Composite legacy (DÉPRÉCIÉ, ré-exporte metrics_profile)
 │   ├── evaluate.py             # Pipeline d'évaluation complet
-│   ├── hidden_tests.py         # Générateur de cas cachés
+│   ├── hidden_tests.py         # Générateur de cas cachés + tailles de stress test
 │   ├── static_checks.py        # Vérifications AST statiques (imports bannis…)
 │   ├── run_candidate.py        # Exécution du candidat en sous-processus
 │   ├── load_items.py           # Chargement des items JSON
@@ -119,10 +139,10 @@ TR-CodeBench/
 │   └── trcb_analysis.ipynb               # Notebook d'analyse des résultats
 ├── reports/openrouter_runs/    # CSVs et JSONLs des runs
 ├── prompts/                    # Templates de prompt pour les modèles
-├── scripts/                    # Scripts shell (run_openrouter_eval.sh)
+├── scripts/                    # run_openrouter_eval.sh, aggregate_metrics.py, annotate_oracle_features.py
 ├── docs/
 │   └── SPEC.md                 # Ce document
-└── pyproject.toml
+└── pyproject.toml              # ⚠️ actuellement VIDE (0 octet) — voir §9.6
 ```
 
 ### 3.1 Schéma JSON d'un item
@@ -185,10 +205,14 @@ ast_features          → extraction bisect, heapq, fenwick, kmp, deque, union_f
   ↓
 paradigm_classifier   → detect_paradigms() → is_genuine_divergence()
   ↓
+paradigm_evidence     → assess_paradigm() pour paradigmes fragiles → accept/judge/abstain
+  ↓
 salieri_minhash       → Jaccard 5-grams tokens normalisés (anti-copie oracle)
   ↓
-scoring.py            → score ∈ [0, 1]
+metrics_profile.py    → profil 5 axes (PRINCIPAL) + scoring.py compute_score() (composite déprécié)
 ```
+
+> Sortie de `evaluate_candidate()` : `metrics`, `metrics_profile` (5 axes), `score` (composite déprécié), `pd_classification` (dont `paradigm_evidence` détaillé par paradigme), `complexity_profile`, et les suites `public` / `hidden` / `pbt`.
 
 ### 4.2 Modules en détail
 
@@ -254,6 +278,47 @@ Génère les cas cachés à partir des oracles. Taille par défaut : `n ∈ [100
 | O(n)             | 1 000      | 10 000     | 15.0      |
 | O((u + q) log n) | 1 000      | 10 000     | 35.0      |
 | O(log n)         | 10 000     | 1 000 000  | 5.0       |
+
+#### `paradigm_evidence/` (v0.4)
+
+Réponse directe à la lacune §9.2 (couverture du classifier ~50 %). Pour les paradigmes **fragiles à l'AST** — `segment_tree`, `z_algorithm`, `rolling_hash_with_verification`, `dfs_memoization` — une pile de preuves multi-couches remplace la simple signature :
+
+| Couche       | Source de signaux                                   | Poids |
+| ------------ | --------------------------------------------------- | ----- |
+| `ast_feature`  | features AST existantes                            | 0.30  |
+| `structural`   | motifs structurels (`ast_signals.py`)             | 0.50  |
+| `dataflow`     | analyse de flux (`dataflow_signals.py`)           | 0.20  |
+| `behavioral`   | sondes comportementales (`behavioral_probes.py`)  | 0.25  |
+
+`evidence_fusion.fuse()` calcule une confiance pondérée puis décide `accept` (≥ `ACCEPT_THRESHOLD`), `judge` (≥ `JUDGE_THRESHOLD`, candidat à un LLM-judge) ou `abstain`. `enhance_candidate_paradigms()` corrige la liste issue du classifier : retire un paradigme fragile si la pile `abstain`, l'ajoute si elle `accept`. Le détail par paradigme est exposé dans `pd_classification.paradigm_evidence`.
+
+### 4.3 Trajectoires de déni (`denial/`, v0.4)
+
+Réponse à la lacune §11.5 (la PD ne mesure que la distance à *un* oracle). Au lieu d'un seul jet, le modèle est ré-interrogé sur le **même item** sous des **contraintes successives** déclarées par item dans `denial_constraints` :
+
+```json
+{
+  "id": "deny_nested_loops",
+  "type": "forbidden_construct",        // forbidden_api | forbidden_import | forbidden_structure | forbidden_paradigm | resource
+  "forbidden": ["nested_for_loops", "nested_while_loops"],
+  "reason": "Force recursive memo or branch-and-bound instead of iterative DP",
+  "expected_alternatives": ["recursive_memoization", "branch_and_bound"],
+  "is_feasible": true
+}
+```
+
+`run_denial_trajectory()` enchaîne : `select_next_constraint()` → `build_denial_prompt()` → évaluation correctness → `verify_denial()` (respect de la contrainte par analyse AST). La trajectoire reporte :
+
+| Métrique                       | Définition                                                       |
+| ------------------------------ | --------------------------------------------------------------- |
+| `trajectory_depth`             | nombre d'étapes                                                  |
+| `denial_pass_rate`             | étapes correctes ET contrainte respectée / étapes de déni       |
+| `constraint_satisfaction_rate` | étapes respectant la contrainte / étapes de déni                |
+| `unique_valid_paradigms`       | paradigmes distincts valides observés                           |
+| `valid_strategy_switches`      | changements de paradigme entre étapes réussies                  |
+| `pd_confirmed`                 | ≥ 2 paradigmes valides distincts avec `pd_score > 0`            |
+
+C'est une mesure de l'**espace des solutions** que le modèle sait atteindre, pas seulement de sa distance à la référence.
 
 ---
 
@@ -396,7 +461,9 @@ PARADIGM_COSMETIC_THRESHOLD    = 0.20   # En dessous : distance trop faible → 
 
 ---
 
-## 6. Les 10 items prototypes
+## 6. Les items prototypes
+
+> **Le dataset compte aujourd'hui 40 items** (`trcb-proto-0001` … `0040`). Le tableau ci-dessous documente les **10 items historiques** (v0.1–v0.3) qui restent la base des runs live de référence. Les items `0011`–`0040` étendent les familles : tris (`0011`–`0015`), DP (`0016`–`0020`), graphes (`0021`–`0025`), chaînes (`0026`–`0030`), structures de données (`0031`–`0035`), maths (`0036`–`0040`). Tous suivent le même schéma enrichi (titre paraphrasé, `denial_constraints`, `anti_contamination`). Le tableau complet à 40 lignes reste à générer depuis `datasets/curated/`.
 
 | ID                | Problème                                    | Complexité cible | Paradigme oracle (principal)    | Known valid paradigms                                                          |
 | ----------------- | ------------------------------------------- | ---------------- | ------------------------------- | ------------------------------------------------------------------------------ |
@@ -548,6 +615,8 @@ def test_naive_lis_fails_complexity():
 
 Il faut au moins une solution naïve O(n²) par item avec contrainte O(n log n) dans la suite de tests.
 
+> **MàJ v0.4 — partiellement traité.** Des baselines naïves existent désormais dans `candidates/` (`naive_lis_o_n2.py`, `naive_dijkstra_bellman_ford.py`, `naive_kmp_brute_force.py`, `naive_fenwick_linear.py`) et `tests/unit/test_evaluator.py` les exerce. Reste : couvrir une baseline naïve par item et confirmer la discrimination sur un run live à 40 items.
+
 ### 9.2 Couverture du classifier à 50 % ⚠️
 
 Sur 30 paradigmes définis dans `known_valid_paradigms` des 10 items, ~15 ne sont pas détectables par `paradigm_classifier.py` :
@@ -565,13 +634,29 @@ Sur 30 paradigmes définis dans `known_valid_paradigms` des 10 items, ~15 ne son
 
 **Impact :** 79 % des solutions correctes obtiennent 0.85 sans signal PD, même si le paradigme est objectivement différent de l'oracle.
 
+> **MàJ v0.4 — en cours de traitement.** Le module `paradigm_evidence/` (§4.2) cible précisément les 4 paradigmes les plus fragiles (`segment_tree`, `z_algorithm`, `rolling_hash_with_verification`, `dfs_memoization`) via une pile de preuves multi-couches. Les autres (`sweep_line_variant`, `block_prefix_suffix`, `component_labeling_after_build`…) restent non couverts. Couverture cible : 80 %.
+
 ### 9.3 PBT non shrinkable
 
 `evaluate.py` appelle `strategy.example()` N fois via `@given`. Hypothesis est utilisé comme générateur d'exemples, pas comme moteur de vérification avec shrinking. Pas de directed search, pas de stateful testing. La couverture dépend entièrement de la qualité des stratégies écrites à la main.
 
 ### 9.4 README divergent du code
 
-`README.md` décrit l'ancien scoring binaire `pd_candidate`. Le code actif utilise `pd_score` continu depuis v0.2. Cette divergence est une dette de documentation qui rend le benchmark difficile à citer dans un papier.
+`README.md` décrivait l'ancien scoring binaire `pd_candidate`. Le code actif utilise le profil 5 axes (`metrics_profile.py`) ; le composite `pd_score` est conservé mais déprécié.
+
+> **MàJ v0.4 — traité.** README et SPEC réalignés sur les 40 items, le profil 5 axes et les modules `denial/` + `paradigm_evidence/` (mise à jour 2026-05-24). Reste : générer le tableau complet des 40 items dans le §6.
+
+### 9.6 `pyproject.toml` vide ⚠️ CRITIQUE
+
+`pyproject.toml` est commité **à 0 octet**. Conséquences : `pip install -e ".[dev]"` et `.[notebook]` n'installent aucune dépendance ni extra, aucun point d'entrée console n'est défini, et `egg-info` reporte la version `0.0.0`. Les instructions d'installation du README ne fonctionnent pas en l'état.
+
+**Correction recommandée :** restaurer un `pyproject.toml` déclarant le package `trcodebench` (layout `src/`), les dépendances runtime (`hypothesis`, `jsonschema`, `requests`, `psutil`, `python-dotenv`) et les extras `dev` (pytest, ruff, mypy) / `notebook` (jupyterlab, matplotlib, pandas, ipykernel, nbconvert). C'est la dette la plus prioritaire.
+
+### 9.7 Incohérences de dataset
+
+- Familles non normalisées dans les JSON : `data_structure`/`data_structures`, `string`/`strings`, `graph`/`graph_dp`.
+- Dérive de schéma : `schemas/item.schema.json` nomme `oracle_paradigm_features`, mais les items stockent `oracle_ast_features` + `oracle_detected_paradigms`.
+- `reports/.DS_Store` est versionné (artefact macOS) — à supprimer et ignorer.
 
 ### 9.5 Sandbox social, pas technique
 
@@ -665,6 +750,17 @@ Même si le classifier était parfait, il répond uniquement à "le candidat uti
 ---
 
 ## 12. Recommandations et feuille de route
+
+> **État d'avancement (2026-05-24).**
+> - ✅ **Scaling dataset 10 → 40 items** (P12.6 étape 1–2 largement avancée).
+> - ✅ **Baselines naïves** ajoutées (`candidates/`) + tests (P12.1, partiel).
+> - ✅ **Couverture classifier** : module `paradigm_evidence/` pour 4 paradigmes fragiles (P12.2, en cours).
+> - ✅ **`oracle_ast_features` pré-calculées** et figées dans les JSON (P12.3).
+> - ✅ **README/SPEC réalignés** (P12.4).
+> - ✅ **Trajectoires de déni** (`denial/`) — extension non prévue à l'origine, traite §11.5.
+> - ⏳ **Restaurer `pyproject.toml`** (nouveau, bloquant — §9.6).
+> - ⏳ **Items post-cutoff** (P12.5) : non commencé.
+> - ⏳ **Nouveau run live à 40 items** pour re-valider discrimination de complexité et PD.
 
 ### 12.1 Priorité 1 — Valider le discriminant de complexité (immédiat)
 
