@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import importlib.metadata
 import importlib.util
 import json
+import sys
 import time
 import warnings
 from pathlib import Path
@@ -467,7 +469,297 @@ def evaluate_candidate(
             "pbt": pbt_result,
         },
         "pbt_error": pbt_error,
+        "failure_analysis": {
+            "public": _classify_suite_failures(public_result),
+            "hidden": _classify_suite_failures(hidden_result),
+            "pbt": _classify_pbt_failures(pbt_result),
+        },
+        "execution_context": {
+            "model": "multiprocessing.Process",
+            "python_version": sys.version,
+            "timeout_seconds": timeout_seconds,
+            "isolation": (
+                "process-level (no network/fs isolation; "
+                "static AST checks gate dangerous imports before execution)"
+            ),
+            "packages_available": {
+                pkg: _get_package_version(pkg)
+                for pkg in ["hypothesis", "jsonschema", "requests", "python-dotenv"]
+            },
+        },
     }
+
+
+# ---------------------------------------------------------------------------
+# Failure classification helpers (used by evaluate_candidate return dict)
+# ---------------------------------------------------------------------------
+
+def _classify_suite_failures(suite_result: dict[str, Any]) -> dict[str, int]:
+    """Count crash / wrong_answer / timeout from a _run_suite result dict.
+
+    Any entry in suite_result["failures"] is a failed case.
+    status=="ok" means wrong answer; "crash"/"timeout" are their own types.
+    """
+    wrong_answer = crash = timeout = 0
+    for f in suite_result.get("failures", []):
+        status = f.get("status", "")
+        if status == "timeout":
+            timeout += 1
+        elif status == "crash":
+            crash += 1
+        else:
+            wrong_answer += 1
+    return {"wrong_answer": wrong_answer, "crash": crash, "timeout": timeout}
+
+
+def _classify_pbt_failures(pbt_result: dict[str, Any]) -> dict[str, Any]:
+    """Classify PBT failures into wrong_answer / crash / unsatisfiable."""
+    wrong_answer = crash = unsatisfiable = 0
+    counterexample: str | None = None
+    for f in pbt_result.get("failures", []):
+        err = f.get("error") or ""
+        if err.startswith("Unsatisfiable:"):
+            unsatisfiable += 1
+        elif "crash" in err.lower():
+            crash += 1
+        else:
+            wrong_answer += 1
+            counterexample = counterexample or err
+    return {
+        "wrong_answer": wrong_answer,
+        "crash": crash,
+        "unsatisfiable": unsatisfiable,
+        "counterexample": counterexample,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Execution context helper
+# ---------------------------------------------------------------------------
+
+def _get_package_version(name: str) -> str | None:
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Output formatters for the CLI (--format flag)
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Terminal capability probe — one check covers all non-ASCII chars we use.
+# Covers: block bars (█░), box-drawing (═─), tick/cross (✓✗).
+# ---------------------------------------------------------------------------
+def _probe_unicode() -> bool:
+    enc = getattr(sys.stdout, "encoding", None) or "utf-8"
+    try:
+        "█░═─✓✗".encode(enc)
+        return True
+    except (UnicodeEncodeError, LookupError, AttributeError):
+        return False
+
+
+_UNICODE_OK = _probe_unicode()
+
+_FILL  = "█" if _UNICODE_OK else "#"
+_EMPTY = "░" if _UNICODE_OK else "."
+_RULE_D = "═" if _UNICODE_OK else "="   # double rule (header/footer)
+_RULE_S = "─" if _UNICODE_OK else "-"   # single rule (section)
+_TICK   = "✓" if _UNICODE_OK else "+"
+_CROSS  = "✗" if _UNICODE_OK else "x"
+
+
+def _bar(value: float | None, width: int = 16) -> str:
+    """Render a fractional value [0, 1] as an ASCII block bar."""
+    if value is None:
+        return _RULE_S * width
+    filled = max(0, min(width, round(value * width)))
+    return _FILL * filled + _EMPTY * (width - filled)
+
+
+def _format_compact(result: dict[str, Any]) -> str:
+    """One-line summary: counts + 5 axes + legacy score."""
+    mp = result.get("metrics_profile", {})
+    suites = result.get("suites", {})
+    pub = suites.get("public", {})
+    hid = suites.get("hidden", {})
+    pbt = suites.get("pbt", {})
+    f = lambda v: f"{v:.2f}" if v is not None else "N/A"
+    gate = "OK" if pbt.get("pbt_gate_passed") else "FAIL"
+    return (
+        f"{result['item_id']} | "
+        f"pub={pub.get('passed','?')}/{pub.get('total','?')} "
+        f"hid={hid.get('passed','?')}/{hid.get('total','?')} "
+        f"pbt={gate} | "
+        f"C={f(mp.get('correctness'))} "
+        f"R={f(mp.get('robustness'))} "
+        f"E={f(mp.get('efficiency'))} "
+        f"D={f(mp.get('divergence'))} "
+        f"S={f(mp.get('safety'))} | "
+        f"score={f(result.get('score', {}).get('score'))}"
+    )
+
+
+def _format_human(result: dict[str, Any]) -> str:
+    """Colorized multi-line evaluation report for the terminal."""
+    W = 58
+    lines: list[str] = []
+
+    def rule(title: str = "") -> None:
+        if title:
+            pad = W - 4 - len(title)
+            lines.append(f"{_RULE_S}{_RULE_S} {title} " + _RULE_S * max(0, pad))
+        else:
+            lines.append(_RULE_D * W)
+
+    def row(label: str, value: str) -> None:
+        lines.append(f"  {label:<16}{value}")
+
+    mp = result.get("metrics_profile", {})
+    suites = result.get("suites", {})
+    pub = suites.get("public", {})
+    hid = suites.get("hidden", {})
+    pbt = suites.get("pbt", {})
+    sc = result.get("static_checks", {})
+    cx = result.get("execution_context", {})
+    score = result.get("score", {})
+    comp = result.get("complexity_profile") or {}
+    pd = result.get("pd_classification", {})
+    fa = result.get("failure_analysis", {})
+    metrics = result.get("metrics", {})
+
+    # Header
+    rule()
+    lines.append("  TR-CodeBench - Evaluation Report")
+    rule()
+    row("Item:", result.get("item_id", "?"))
+    row("Candidate:", Path(result.get("candidate", "")).name)
+    timeout = cx.get("timeout_seconds", "?")
+    row("Execution:", f"multiprocessing.Process  timeout={timeout}s/case")
+    row("Python:", (cx.get("python_version") or sys.version).split()[0])
+    lines.append("")
+
+    # ── Test Results ─────────────────────────────────────────────────────────
+    rule("Test Results")
+    pub_pct = f"({pub.get('pass_rate', 0) * 100:.0f}%)" if pub.get("total") else ""
+    hid_pct = f"({hid.get('pass_rate', 0) * 100:.0f}%)" if hid.get("total") else ""
+    row("Public", f"{pub.get('passed','?'):>4}/{pub.get('total','?'):<4} {pub_pct}")
+    row("Hidden", f"{hid.get('passed','?'):>4}/{hid.get('total','?'):<4} {hid_pct}")
+    gate_sym = _TICK if pbt.get("pbt_gate_passed") else _CROSS
+    pbt_rate = pbt.get("pbt_group_pass_rate") or pbt.get("pass_rate")
+    pbt_rate_str = f"  group_pass_rate={pbt_rate:.2f}" if pbt_rate is not None else ""
+    row("PBT gate", f"{gate_sym}{pbt_rate_str}")
+
+    # Failure breakdown (only if there are failures)
+    pub_fa = fa.get("public", {})
+    hid_fa = fa.get("hidden", {})
+    pbt_fa = fa.get("pbt", {})
+    pub_fail = sum(pub_fa.values()) if pub_fa else 0
+    hid_fail = sum(hid_fa.values()) if hid_fa else 0
+    if pub_fail or hid_fail:
+        lines.append(
+            f"  {'Failures:':<16}"
+            f"pub wa={pub_fa.get('wrong_answer',0)} cr={pub_fa.get('crash',0)} "
+            f"to={pub_fa.get('timeout',0)}  "
+            f"hid wa={hid_fa.get('wrong_answer',0)} cr={hid_fa.get('crash',0)} "
+            f"to={hid_fa.get('timeout',0)}"
+        )
+    if pbt_fa.get("wrong_answer") or pbt_fa.get("crash") or pbt_fa.get("unsatisfiable"):
+        ce = pbt_fa.get("counterexample") or ""
+        ce_str = f"  -> {ce[:40]}..." if ce else ""
+        lines.append(
+            f"  {'PBT failures:':<16}"
+            f"wa={pbt_fa.get('wrong_answer',0)} cr={pbt_fa.get('crash',0)} "
+            f"unsat={pbt_fa.get('unsatisfiable',0)}{ce_str}"
+        )
+    lines.append("")
+
+    # ── 5-Axis Metrics Profile ───────────────────────────────────────────────
+    rule("5-Axis Metrics Profile")
+
+    def axis_row(name: str, value: float | None, note: str = "") -> None:
+        bar = _bar(value)
+        val_str = f"{value:.2f}" if value is not None else " N/A"
+        lines.append(f"  {name:<14}{bar} {val_str}   {note}")
+
+    c_val = mp.get("correctness")
+    if c_val == 1.0:
+        c_note = f"{_TICK} all tests pass"
+    elif c_val == 0.0:
+        c_note = f"{_CROSS} tests failing"
+    else:
+        c_note = ""
+
+    r_val = mp.get("robustness")
+    pbt_gate_ok = pbt.get("pbt_gate_passed")
+    if pbt_rate is not None:
+        r_note = f"pbt_gate={_TICK if pbt_gate_ok else _CROSS}  group_rate={pbt_rate:.2f}"
+    else:
+        r_note = f"pbt_gate={_TICK if pbt_gate_ok else _CROSS}"
+
+    e_val = mp.get("efficiency")
+    ratio = comp.get("ratio")
+    ratio_max = comp.get("expected_ratio_max")
+    if e_val is None:
+        e_note = "N/A (correctness gate not met)"
+    elif ratio is not None and ratio_max is not None:
+        e_note = f"t_large/t_small={ratio:.2f}x  (max={ratio_max:.0f}x)"
+    else:
+        e_note = ""
+
+    d_val = mp.get("divergence")
+    p_dist = pd.get("paradigm_distance")
+    sal = metrics.get("salieri_overlap")
+    genuine = pd.get("is_genuine_divergence", False)
+    if d_val is None:
+        d_note = "N/A (correctness gate not met)"
+    else:
+        d_parts = []
+        if p_dist is not None:
+            d_parts.append(f"paradigm_dist={p_dist:.2f}")
+        if sal is not None:
+            d_parts.append(f"salieri={sal:.2f}")
+        if genuine:
+            d_parts.append(f"genuine{_TICK}")
+        d_note = "  ".join(d_parts)
+
+    s_val = mp.get("safety")
+    violations = sc.get("violations") or []
+    s_note = f"{_TICK} no violations" if s_val == 1.0 else f"{_CROSS} {'; '.join(violations)}"
+
+    axis_row("Correctness", c_val, c_note)
+    axis_row("Robustness", r_val, r_note)
+    axis_row("Efficiency", e_val, e_note)
+    axis_row("Divergence", d_val, d_note)
+    axis_row("Safety", s_val, s_note)
+    lines.append("")
+
+    # ── Paradigm Detection ───────────────────────────────────────────────────
+    cand_par = pd.get("candidate_paradigms") or []
+    orac_par = pd.get("oracle_paradigms") or []
+    if cand_par or orac_par:
+        rule("Paradigm Detection")
+        row("Candidate:", ", ".join(cand_par) or "none detected")
+        row("Oracle:", ", ".join(orac_par) or "none detected")
+        row("Genuine div.:", f"yes {_TICK}" if genuine else "no")
+        lines.append("")
+
+    # Static Check Violations
+    if not sc.get("ok", True) or violations:
+        rule("Static Check Violations !")
+        for v in violations:
+            lines.append(f"  {_CROSS} {v}")
+        lines.append("")
+
+    # ── Legacy Composite (deprecated) ────────────────────────────────────────
+    rule("Legacy Composite Score (deprecated)")
+    row("score =", str(score.get("score", "N/A")))
+    row("", "(use metrics_profile for analysis)")
+    rule()
+
+    return "\n".join(lines)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -478,6 +770,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pbt-cases", type=int, default=25, help="Number of Hypothesis-generated examples.")
     parser.add_argument("--timeout", type=float, default=1.0, help="Timeout per test case in seconds.")
     parser.add_argument("--strict-exit", action="store_true", help="Exit non-zero when correctness_score is 0.")
+    parser.add_argument(
+        "--format",
+        choices=["json", "human", "compact"],
+        default="json",
+        help="Output format: json (default, full result), human (readable table), compact (one line).",
+    )
     args = parser.parse_args(argv)
 
     result = evaluate_candidate(
@@ -487,7 +785,14 @@ def main(argv: list[str] | None = None) -> int:
         pbt_cases=args.pbt_cases,
         timeout_seconds=args.timeout,
     )
-    print(json.dumps(result, indent=2, sort_keys=True))
+
+    if args.format == "compact":
+        print(_format_compact(result))
+    elif args.format == "human":
+        print(_format_human(result))
+    else:
+        print(json.dumps(result, indent=2, sort_keys=True))
+
     if args.strict_exit and result["score"]["correctness_score"] < 1.0:
         return 1
     return 0

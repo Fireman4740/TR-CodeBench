@@ -296,7 +296,9 @@ class OpenRouterRunner:
             "hallucination_flag": score.get("hallucination_flag"),
             "public_pass_rate": metrics.get("public_pass_rate"),
             "hidden_pass_rate": metrics.get("hidden_pass_rate"),
-            "pbt_pass_rate": metrics.get("pbt_pass_rate"),
+            # Fix: pbt_pass_rate lives in suites["pbt"]["pass_rate"], not in metrics
+            "pbt_pass_rate": pbt_suite.get("pass_rate"),
+            "pbt_gate_passed": pbt_suite.get("pbt_gate_passed"),
             "salieri_overlap": metrics.get("salieri_overlap"),
             "genuine_divergence": paradigm.get("is_genuine_divergence"),
             "complexity_ratio_ok": metrics.get("complexity_ratio_ok"),
@@ -310,10 +312,16 @@ class OpenRouterRunner:
             "hidden_total": hidden_suite.get("total"),
             "pbt_passed": pbt_suite.get("passed"),
             "pbt_total": pbt_suite.get("total"),
+            # Failure counts per suite (derived from failures list)
+            "public_failures": len(public_suite.get("failures") or []),
+            "hidden_failures": len(hidden_suite.get("failures") or []),
+            "pbt_failures": len(pbt_suite.get("failures") or []),
             "pbt_error": (eval_result or {}).get("pbt_error"),
             "candidate_paradigms": ",".join(paradigm.get("candidate_paradigms") or []),
             "oracle_paradigms": ",".join(paradigm.get("oracle_paradigms") or []),
             "static_violations": ";".join(static_checks.get("violations") or []),
+            # Execution model (always multiprocessing.Process)
+            "execution_model": "multiprocessing.Process",
         }
 
     def run_one_experiment(self, job: tuple[str, str, int]) -> dict[str, Any]:
